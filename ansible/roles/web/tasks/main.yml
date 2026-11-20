@@ -1,0 +1,54 @@
+---
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure the web root exists
+  ansible.builtin.file:
+    path: /var/www/html
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the default Nginx site configuration
+  ansible.builtin.template:
+    src: default.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Nginx
+
+- name: Install the lab landing page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Nginx
+
+- name: Start Nginx when it is not running
+  ansible.builtin.shell: |
+    nginx_state=""
+    if [ -s /run/nginx.pid ]; then
+      nginx_state="$(ps -o stat= -p "$(cat /run/nginx.pid)" 2>/dev/null | tr -d '[:space:]' || true)"
+    fi
+    case "$nginx_state" in
+      ""|Z*)
+        rm -f /run/nginx.pid
+        nginx
+        echo NGINX_STARTED
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+  args:
+    executable: /bin/sh
+  register: nginx_start
+  changed_when: "'NGINX_STARTED' in nginx_start.stdout"

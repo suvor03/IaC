@@ -1,0 +1,12 @@
+[webservers]
+${nodes["web"]} ansible_host=${nodes["web"]}
+
+[appservers]
+${nodes["app"]} ansible_host=${nodes["app"]}
+
+[dbservers]
+${nodes["db"]} ansible_host=${nodes["db"]}
+
+[all:vars]
+ansible_connection=community.docker.docker
+ansible_python_interpreter=/usr/bin/python3

@@ -1,0 +1,20 @@
+---
+- name: Reload Gunicorn
+  ansible.builtin.shell: |
+    set -eu
+    gunicorn_state=""
+    if [ -s /run/iac-gunicorn.pid ]; then
+      gunicorn_state="$(ps -o stat= -p "$(cat /run/iac-gunicorn.pid)" 2>/dev/null | tr -d '[:space:]' || true)"
+    fi
+    case "$gunicorn_state" in
+      ""|Z*)
+        rm -f /run/iac-gunicorn.pid
+        gunicorn --chdir /opt/iac-app --bind 0.0.0.0:8000 --daemon --pid /run/iac-gunicorn.pid app:application
+        ;;
+      *)
+        kill -HUP "$(cat /run/iac-gunicorn.pid)"
+        ;;
+    esac
+  args:
+    executable: /bin/sh
+  changed_when: true

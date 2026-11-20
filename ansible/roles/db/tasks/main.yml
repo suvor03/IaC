@@ -1,0 +1,20 @@
+---
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    name: postgresql
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Start the default PostgreSQL cluster when it is stopped
+  ansible.builtin.shell: |
+    if pg_ctlcluster 14 main status >/dev/null 2>&1; then
+      echo POSTGRESQL_RUNNING
+    else
+      pg_ctlcluster 14 main start
+      echo POSTGRESQL_STARTED
+    fi
+  args:
+    executable: /bin/sh
+  register: postgresql_start
+  changed_when: "'POSTGRESQL_STARTED' in postgresql_start.stdout"

@@ -1,0 +1,21 @@
+# Terraform local data and state
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/crash.log
+
+# Generated Ansible inventory and runtime files
+ansible/inventory.ini
+ansible/*.retry
+ansible/collections/
+
+# Python local environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+
+# macOS Finder metadata
+.DS_Store
+.idea/
+.vscode/

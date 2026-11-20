@@ -1,0 +1,21 @@
+---
+- name: Reload Nginx
+  ansible.builtin.shell: |
+    set -eu
+    nginx -t
+    nginx_state=""
+    if [ -s /run/nginx.pid ]; then
+      nginx_state="$(ps -o stat= -p "$(cat /run/nginx.pid)" 2>/dev/null | tr -d '[:space:]' || true)"
+    fi
+    case "$nginx_state" in
+      ""|Z*)
+        rm -f /run/nginx.pid
+        nginx
+        ;;
+      *)
+        nginx -s reload
+        ;;
+    esac
+  args:
+    executable: /bin/sh
+  changed_when: true

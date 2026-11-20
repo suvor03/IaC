@@ -1,0 +1,32 @@
+---
+- name: Prepare Python for Ansible modules
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install Python and its apt bindings when missing
+      ansible.builtin.raw: |
+        set -eu
+        if command -v python3 >/dev/null 2>&1; then
+          echo PYTHON_PRESENT
+        else
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-apt
+          echo PYTHON_INSTALLED
+        fi
+      register: python_bootstrap
+      changed_when: "'PYTHON_INSTALLED' in python_bootstrap.stdout"
+
+- name: Configure the Nginx web node
+  hosts: webservers
+  roles:
+    - role: web
+
+- name: Configure the Gunicorn application node
+  hosts: appservers
+  roles:
+    - role: app
+
+- name: Configure the PostgreSQL database node
+  hosts: dbservers
+  roles:
+    - role: db

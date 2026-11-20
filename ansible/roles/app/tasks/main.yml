@@ -1,0 +1,47 @@
+---
+- name: Install Python and Gunicorn
+  ansible.builtin.apt:
+    name:
+      - python3
+      - gunicorn
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure the application directory exists
+  ansible.builtin.file:
+    path: /opt/iac-app
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the WSGI application
+  ansible.builtin.template:
+    src: app.py.j2
+    dest: /opt/iac-app/app.py
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Gunicorn
+
+- name: Start Gunicorn when it is not running
+  ansible.builtin.shell: |
+    gunicorn_state=""
+    if [ -s /run/iac-gunicorn.pid ]; then
+      gunicorn_state="$(ps -o stat= -p "$(cat /run/iac-gunicorn.pid)" 2>/dev/null | tr -d '[:space:]' || true)"
+    fi
+    case "$gunicorn_state" in
+      ""|Z*)
+        rm -f /run/iac-gunicorn.pid
+        gunicorn --chdir /opt/iac-app --bind 0.0.0.0:8000 --daemon --pid /run/iac-gunicorn.pid app:application
+        echo GUNICORN_STARTED
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+  args:
+    executable: /bin/sh
+  register: gunicorn_start
+  changed_when: "'GUNICORN_STARTED' in gunicorn_start.stdout"
